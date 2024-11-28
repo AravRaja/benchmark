@@ -281,20 +281,29 @@ func (n *NodeOperations) InitRun(req *stubs.InitRunRequest, res *stubs.StatusRep
 // propagates the initStop signal to all the nodes to all safe stopping without deadlock
 // and the second signal is the actual stop signal
 func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitResponse) (err error) {
+	reqNew := &stubs.EmptyRequest{}
+	resNew := &stubs.EmptyResponse{}
 	n.mu.Lock()
 	defer n.mu.Unlock()
-	if !n.leader {
-		return fmt.Errorf("error: not leader being called")
+	if n.initStopRun {
+		n.stopUpdate = true
 	}
-	if !n.running {
 
+	if !n.running {
 		return
 	}
+	if !n.initStopRun {
+		n.initStopRun = true
+		n.haloCond.Broadcast()
+		n.belowNode.Call(stubs.OnClientQuitHandler, reqNew, resNew)
 
-	n.initStopRun = true
-	n.haloCond.Broadcast()
-	for !n.stopUpdate {
-		n.haloCond.Wait()
+	}
+
+	if n.leader {
+		fmt.Println("Leader has received quit signal, stopping nodes")
+		for !n.stopUpdate {
+			n.haloCond.Wait()
+		}
 	}
 	return nil
 }
@@ -307,6 +316,9 @@ func (n *NodeOperations) RunNode(req *stubs.EmptyRequest, res *stubs.EmptyRespon
 	n.mu.Unlock()
 	for i := 1; i <= n.turns; i++ {
 		n.mu.Lock()
+		if n.initStopRun {
+			return
+		}
 
 		if n.safeDelete != -1 && n.leader && n.turn-(n.nodeNum+1) > n.safeDelete {
 			n.safeDelete = n.turn - (n.nodeNum + 1)
@@ -325,12 +337,13 @@ func (n *NodeOperations) RunNode(req *stubs.EmptyRequest, res *stubs.EmptyRespon
 		n.turn++
 		n.haloCond.Broadcast()
 
-		if n.initStopRun {
+		/*if n.initStopRun {
 
 			//when the initStopRun signal stop calculation and get into a safer haloMode where your jus waiting for one more signal
 			//from your previous node beofre stopping
 			status := ""
 			for {
+				fmt.Println("Node is in safeShutdown mode")
 				n.belowBorder, status = haloExchange(n.world, n.safeDelete, n.turn, n.belowNode, n.initStopRun)
 
 				if status == "Stopped" {
@@ -346,7 +359,7 @@ func (n *NodeOperations) RunNode(req *stubs.EmptyRequest, res *stubs.EmptyRespon
 				}
 			}
 
-		}
+		}*/
 
 		haloChan := make(chan []byte)
 		go func() {
@@ -394,7 +407,7 @@ func (n *NodeOperations) GetBorder(req *stubs.BorderRequest, res *stubs.BorderRe
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	defaultBorder := make([]byte, n.width)
-	if n.initStopRun && req.StopRun {
+	/*if n.initStopRun && req.StopRun {
 		res.Border = defaultBorder
 		res.Status = "Stopped"
 		n.neighbourNodeStop = true
@@ -407,17 +420,16 @@ func (n *NodeOperations) GetBorder(req *stubs.BorderRequest, res *stubs.BorderRe
 		res.Status = "Running"
 		n.haloCond.Broadcast()
 		return
-	}
+	}*/
 	// Wait until n.turn matches req.Turn
 	for n.turn != req.Turn && !n.initStopRun {
 		n.haloCond.Wait() // Wait until notified that n.turn may have changed
 	}
+
 	if n.initStopRun {
 
 		res.Border = defaultBorder
 		res.Status = "Running"
-
-		n.haloCond.Broadcast()
 		return
 	}
 
