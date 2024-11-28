@@ -398,7 +398,6 @@ func (n *NodeOperations) GetBorder(req *stubs.BorderRequest, res *stubs.BorderRe
 		res.Border = defaultBorder
 		res.Status = "Stopped"
 		n.neighbourNodeStop = true
-
 		n.haloCond.Broadcast()
 		return
 	}
@@ -406,7 +405,6 @@ func (n *NodeOperations) GetBorder(req *stubs.BorderRequest, res *stubs.BorderRe
 		n.initStopRun = true
 		res.Border = defaultBorder
 		res.Status = "Running"
-
 		n.haloCond.Broadcast()
 		return
 	}
@@ -417,7 +415,7 @@ func (n *NodeOperations) GetBorder(req *stubs.BorderRequest, res *stubs.BorderRe
 	if n.initStopRun {
 
 		res.Border = defaultBorder
-		res.Status = "Stopped"
+		res.Status = "Running"
 
 		n.haloCond.Broadcast()
 		return
