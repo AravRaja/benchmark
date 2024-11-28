@@ -157,7 +157,7 @@ func NewNodeOperations() *NodeOperations {
 	n := &NodeOperations{
 		isPaused:      false,
 		worldBuffer:   make(map[int]WorldInfo),
-		brokerAddress: "172.31.5.196:8030",
+		brokerAddress: "172.31.36.83:8030",
 	}
 	n.pauseCond = sync.NewCond(&n.mu)
 	n.haloCond = sync.NewCond(&n.mu)
@@ -514,7 +514,7 @@ func main() {
 	} //allows u to enter the port in e.g go run server.go 8070
 
 	pAddr := flag.String("port", port, "Port to listen on")
-	brokerAddr := "172.31.5.196:8030"
+	brokerAddr := "172.31.36.83:8030"
 	flag.Parse()
 	rand.Seed(time.Now().UnixNano())
 	node := NewNodeOperations()

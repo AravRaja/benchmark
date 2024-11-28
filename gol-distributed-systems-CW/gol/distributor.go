@@ -26,7 +26,7 @@ var (
 )
 
 func initClient() {
-	server := flag.String("server", "172.31.5.196:8030", "IP:port string to connect to as server")
+	server := flag.String("server", "172.31.36.83:8030", "IP:port string to connect to as server")
 	flag.Parse()
 	var err error
 	client, err = rpc.Dial("tcp", *server)
