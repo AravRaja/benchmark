@@ -280,7 +280,7 @@ func (n *NodeOperations) InitRun(req *stubs.InitRunRequest, res *stubs.StatusRep
 // Leader Function Stops the running of the nodes by sending in two signals via halo exchange the first from the leader
 // propagates the initStop signal to all the nodes to all safe stopping without deadlock
 // and the second signal is the actual stop signal
-func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitResponse) (err error) {
+func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.EmptyResponse) (err error) {
 	fmt.Println("Quit signal received")
 	reqNew := &stubs.EmptyRequest{}
 	resNew := &stubs.EmptyResponse{}
@@ -293,9 +293,11 @@ func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitRe
 	if !n.running {
 		return
 	}
+
 	if !n.initStopRun {
 		n.initStopRun = true
 		n.haloCond.Broadcast()
+		n.mu.Unlock()
 		err := n.belowNode.Call(stubs.NodeOnClientQuitHandler, reqNew, resNew)
 
 		if err != nil {
@@ -305,7 +307,7 @@ func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitRe
 		fmt.Println("Leader has sent stop signal to nodes")
 
 	}
-
+	n.mu.Lock()
 	if n.leader {
 		fmt.Println("Leader has received quit signal, stopping nodes")
 		for !n.stopUpdate {
