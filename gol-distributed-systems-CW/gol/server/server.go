@@ -296,7 +296,13 @@ func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitRe
 	if !n.initStopRun {
 		n.initStopRun = true
 		n.haloCond.Broadcast()
-		n.belowNode.Call(stubs.OnClientQuitHandler, reqNew, resNew)
+		err := n.belowNode.Call(stubs.OnClientQuitHandler, reqNew, resNew)
+
+		if err != nil {
+			fmt.Println("Error trying to call belowNode", err)
+			return nil
+		}
+		fmt.Println("Leader has sent stop signal to nodes")
 
 	}
 
