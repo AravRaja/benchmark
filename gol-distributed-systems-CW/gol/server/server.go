@@ -281,6 +281,7 @@ func (n *NodeOperations) InitRun(req *stubs.InitRunRequest, res *stubs.StatusRep
 // propagates the initStop signal to all the nodes to all safe stopping without deadlock
 // and the second signal is the actual stop signal
 func (n *NodeOperations) OnClientQuit(req *stubs.EmptyRequest, res *stubs.QuitResponse) (err error) {
+	fmt.Println("Quit signal received")
 	reqNew := &stubs.EmptyRequest{}
 	resNew := &stubs.EmptyResponse{}
 	n.mu.Lock()
@@ -317,6 +318,9 @@ func (n *NodeOperations) RunNode(req *stubs.EmptyRequest, res *stubs.EmptyRespon
 	for i := 1; i <= n.turns; i++ {
 		n.mu.Lock()
 		if n.initStopRun {
+			fmt.Println("returned from RunNodes")
+			n.running = false
+			n.mu.Unlock()
 			return
 		}
 
